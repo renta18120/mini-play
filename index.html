@@ -1515,6 +1515,128 @@ function racingGame(){
  timer=setInterval(update,35);
 }
 // ===== END MINI RACING =====
+
+// ===== PLATFORM JUMP =====
+function platformGame(){
+ let player={x:135,y:350,w:30,h:30,vy:0};
+ let platforms=[
+  {x:100,y:390,w:100},
+  {x:30,y:300,w:90},
+  {x:170,y:220,w:90},
+  {x:70,y:140,w:90},
+  {x:180,y:60,w:90}
+ ];
+ let camera=0;
+ let score=0;
+ let ended=false;
+ let timer=null;
+ let move=0;
+
+ area(`
+ <div style="text-align:center">
+  <h2>🦘 PLATFORM JUMP</h2>
+  <div id="jumpScore" style="font-size:22px;font-weight:bold">SCORE: 0</div>
+  <canvas id="jumpCanvas" width="300" height="420"
+   style="width:min(100%,360px);background:#17233b;border-radius:14px;touch-action:none"></canvas>
+  <div style="display:flex;justify-content:center;gap:10px;margin:12px">
+   <button onclick="jumpMove(-1)">⬅️</button>
+   <button onclick="jumpAction()">⬆️ JUMP</button>
+   <button onclick="jumpMove(1)">➡️</button>
+  </div>
+  <p>足場を渡って高く進もう！</p>
+ </div>
+ `);
+
+ const canvas=el("jumpCanvas");
+ const ctx=canvas.getContext("2d");
+
+ window.jumpMove=n=>{if(!ended)move=n;};
+ window.jumpAction=()=>{
+  if(!ended&&player.vy===0)player.vy=-11;
+ };
+
+ function draw(){
+  ctx.clearRect(0,0,300,420);
+
+  platforms.forEach(p=>{
+   let y=p.y-camera;
+   if(y>-20&&y<440){
+    ctx.fillStyle="#45d483";
+    ctx.fillRect(p.x,y,p.w,12);
+   }
+  });
+
+  ctx.fillStyle="#35d5ff";
+  ctx.fillRect(player.x,player.y-camera,player.w,player.h);
+ }
+
+ function endJump(){
+  ended=true;
+  clearInterval(timer);
+  finish(score,"🦘 ゲームオーバー！");
+  const b=document.createElement("button");
+  b.textContent="🔄 もう一度プレイ";
+  b.className="action";
+  b.onclick=()=>start("platform");
+  el("area").appendChild(b);
+ }
+
+ function update(){
+  if(!playing||ended){
+   clearInterval(timer);
+   return;
+  }
+
+  player.x+=move*5;
+  player.x=Math.max(0,Math.min(270,player.x));
+
+  let oldY=player.y;
+  player.vy+=0.45;
+  player.y+=player.vy;
+
+  if(player.vy>0){
+   platforms.forEach(p=>{
+    if(oldY+player.h<=p.y&&
+       player.y+player.h>=p.y&&
+       player.x+player.w>p.x&&
+       player.x<p.x+p.w){
+     player.y=p.y-player.h;
+     player.vy=0;
+    }
+   });
+  }
+
+  if(player.y-camera<160){
+   camera=player.y-160;
+  }
+
+  while(Math.min(...platforms.map(p=>p.y))>camera-100){
+   let top=Math.min(...platforms.map(p=>p.y));
+   platforms.push({
+    x:Math.random()*210,
+    y:top-75-Math.random()*35,
+    w:75+Math.random()*35
+   });
+  }
+
+  platforms=platforms.filter(p=>p.y-camera<450);
+
+  score=Math.max(score,Math.floor((350-player.y)/10));
+  el("jumpScore").textContent="SCORE: "+score;
+
+  if(player.y-camera>450){
+   endJump();
+   return;
+  }
+
+  draw();
+ }
+
+ draw();
+ timer=setInterval(update,30);
+}
+// ===== END PLATFORM JUMP =====
+
 </script>
 </body>
 </html>
