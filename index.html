@@ -923,6 +923,191 @@ bgmButton.onclick=async()=>{
  }
 };
 })();
+// ===== TARGET ARENA =====
+(()=>{
+if(document.getElementById("targetLaunch"))return;
+
+const launch=document.createElement("button");
+launch.id="targetLaunch";
+launch.textContent="🎯 TARGET ARENA";
+launch.style.cssText="position:fixed;right:14px;bottom:150px;z-index:9998;background:#2459df;color:white;border:0;border-radius:16px;padding:14px;font-weight:bold";
+document.body.appendChild(launch);
+
+const game=document.createElement("div");
+game.style.cssText="position:fixed;inset:0;z-index:11000;background:#b8d9ff;display:none;font-family:system-ui;overflow:hidden";
+game.innerHTML=`
+<div id="taHud" style="position:absolute;top:12px;left:0;right:0;text-align:center;color:white;font-weight:bold;text-shadow:0 2px 5px #000;font-size:17px;z-index:3">
+ SCORE <span id="taScore">0</span>　
+ TIME <span id="taTime">45</span>　
+ LIVES <span id="taLives">3</span>　
+ LEVEL <span id="taLevel">1</span>
+</div>
+<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:white;font-size:30px;text-shadow:0 0 5px black;z-index:2;pointer-events:none">+</div>
+<button id="taClose" style="position:absolute;top:12px;left:12px;z-index:5;padding:10px;border:0;border-radius:10px">✕ もどる</button>
+<div id="taMessage" style="position:absolute;top:42%;width:100%;text-align:center;color:white;font-size:25px;font-weight:bold;text-shadow:0 2px 5px black;z-index:4;pointer-events:none">画面をタップしてスタート</div>
+<div id="taBottom" style="position:absolute;bottom:15px;left:0;right:0;text-align:center;color:white;text-shadow:0 2px 5px black;z-index:3">赤い光のターゲットを狙おう！</div>
+`;
+document.body.appendChild(game);
+
+let THREE,scene,camera,renderer,raycaster;
+let targets=[];
+let score=0,lives=3,level=1,time=45;
+let active=false,started=false,timer=null,frame=null;
+let lastSpawn=0;
+
+function hud(){
+ document.getElementById("taScore").textContent=score;
+ document.getElementById("taLives").textContent=lives;
+ document.getElementById("taTime").textContent=time;
+ document.getElementById("taLevel").textContent=level;
+}
+
+function makeTarget(){
+ if(!active)return;
+ const geo=new THREE.SphereGeometry(.38+Math.random()*.18,24,18);
+ const mat=new THREE.MeshBasicMaterial({color:0xff202f});
+ const t=new THREE.Mesh(geo,mat);
+ t.position.set((Math.random()-.5)*7,(Math.random()-.5)*4,-9);
+ t.userData.born=Date.now();
+ scene.add(t);
+ targets.push(t);
+}
+
+function removeTarget(t){
+ scene.remove(t);
+ targets=targets.filter(x=>x!==t);
+}
+
+function endGame(){
+ active=false;
+ started=false;
+ clearInterval(timer);
+ cancelAnimationFrame(frame);
+ document.getElementById("taMessage").textContent=
+ "終了！ スコア："+score+"点";
+ document.getElementById("taMessage").style.pointerEvents="auto";
+ document.getElementById("taMessage").onclick=()=>{
+  document.getElementById("taMessage").onclick=null;
+  startGame();
+ };
+}
+
+function startGame(){
+ score=0;lives=3;level=1;time=45;
+ started=true;active=true;
+ targets.forEach(removeTarget);
+ targets=[];
+ document.getElementById("taMessage").textContent="";
+ document.getElementById("taMessage").style.pointerEvents="none";
+ hud();
+ makeTarget();makeTarget();makeTarget();
+ clearInterval(timer);
+ timer=setInterval(()=>{
+  if(!active)return;
+  time--;
+  if(time<=0){time=0;hud();endGame();return;}
+  hud();
+ },1000);
+}
+
+async function setup(){
+ if(renderer)return;
+ THREE=await import("https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js");
+ scene=new THREE.Scene();
+ scene.background=new THREE.Color(0x9bcaff);
+ camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.1,100);
+ camera.position.set(0,1.6,5);
+ camera.lookAt(0,1.6,-8);
+
+ renderer=new THREE.WebGLRenderer({antialias:true});
+ renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+ renderer.setSize(innerWidth,innerHeight);
+ game.prepend(renderer.domElement);
+ renderer.domElement.style.cssText="position:absolute;inset:0;width:100%;height:100%;touch-action:manipulation";
+
+ scene.add(new THREE.HemisphereLight(0xffffff,0x667799,2));
+ const light=new THREE.DirectionalLight(0xffffff,2);
+ light.position.set(2,8,5);scene.add(light);
+
+ const wallMat=new THREE.MeshLambertMaterial({color:0xd9edff});
+ const blueMat=new THREE.MeshLambertMaterial({color:0x254be8});
+ const floorMat=new THREE.MeshLambertMaterial({color:0xffffff});
+
+ function box(w,h,d,x,y,z,mat){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  m.position.set(x,y,z);scene.add(m);
+ }
+ box(18,12,.5,0,5,-10,wallMat);
+ box(18,.3,20,0,-.1,-3,floorMat);
+ box(.4,12,20,-9,5,-3,blueMat);
+ box(.4,12,20,9,5,-3,blueMat);
+ box(18,.4,20,0,11,-3,blueMat);
+
+ raycaster=new THREE.Raycaster();
+
+ function animate(){
+  if(!renderer)return;
+  frame=requestAnimationFrame(animate);
+  if(active){
+   const now=Date.now();
+   if(now-lastSpawn>1800/Math.min(level,3) && targets.length<5){
+    makeTarget();lastSpawn=now;
+   }
+   targets.slice().forEach(t=>{
+    if(now-t.userData.born>6500){
+     removeTarget(t);
+     lives--;
+     hud();
+     if(lives<=0)endGame();
+    }
+   });
+  }
+  renderer.render(scene,camera);
+ }
+ animate();
+
+ renderer.domElement.addEventListener("pointerdown",()=>{
+  if(!active)return;
+  raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
+  const hits=raycaster.intersectObjects(targets);
+  if(hits.length){
+   removeTarget(hits[0].object);
+   score+=10;
+   if(score>0 && score%50===0)level++;
+   hud();
+   makeTarget();
+  }else{
+   // 外れたときは何も起きない
+  }
+ });
+
+ window.addEventListener("resize",()=>{
+  if(!renderer)return;
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+ });
+}
+
+launch.onclick=async()=>{
+ game.style.display="block";
+ try{
+  await setup();
+  startGame();
+ }catch(e){
+  alert("ゲームを読み込めなかったよ。通信環境を確認してね。");
+  game.style.display="none";
+ }
+};
+
+document.getElementById("taClose").onclick=()=>{
+ game.style.display="none";
+ active=false;started=false;
+ clearInterval(timer);
+ cancelAnimationFrame(frame);
+};
+})();
+// ===== END TARGET ARENA =====
 </script>
 </body>
 </html>
