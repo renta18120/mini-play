@@ -1308,6 +1308,116 @@ function showMyPoints(){
 }
 
 showMyPoints();
+// ===== SNAKE GAME =====
+function snakeGame(){
+ const size=15;
+ const cells=20;
+ let snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+ let dir={x:1,y:0};
+ let nextDir={x:1,y:0};
+ let food={x:15,y:10};
+ let points=0;
+ let timer=null;
+ let ended=false;
+
+ area(`
+ <div style="text-align:center">
+  <h2>🐍 SNAKE GAME</h2>
+  <div id="snakeScore" style="font-size:22px;font-weight:bold">SCORE: 0</div>
+  <canvas id="snakeCanvas"
+   width="300" height="300"
+   style="width:min(100%,360px);background:#17233b;border-radius:14px;touch-action:none">
+  </canvas>
+  <div style="margin:12px auto;display:grid;grid-template-columns:repeat(3,65px);gap:6px;justify-content:center">
+   <span></span><button onclick="snakeMove(0,-1)">⬆️</button><span></span>
+   <button onclick="snakeMove(-1,0)">⬅️</button>
+   <button onclick="snakeMove(0,1)">⬇️</button>
+   <button onclick="snakeMove(1,0)">➡️</button>
+  </div>
+  <p>エサを食べて大きくなろう！</p>
+ </div>
+ `);
+
+ const canvas=el("snakeCanvas");
+ const ctx=canvas.getContext("2d");
+
+ function draw(){
+  ctx.fillStyle="#17233b";
+  ctx.fillRect(0,0,300,300);
+
+  ctx.fillStyle="#ef4444";
+  ctx.fillRect(food.x*15,food.y*15,14,14);
+
+  snake.forEach((p,i)=>{
+   ctx.fillStyle=i===0?"#55e6a5":"#22b981";
+   ctx.fillRect(p.x*15,p.y*15,14,14);
+  });
+ }
+
+ function newFood(){
+  do{
+   food={
+    x:Math.floor(Math.random()*cells),
+    y:Math.floor(Math.random()*cells)
+   };
+  }while(snake.some(p=>p.x===food.x&&p.y===food.y));
+ }
+
+ window.snakeMove=(x,y)=>{
+  if(ended)return;
+  if(x===-dir.x&&y===-dir.y)return;
+  nextDir={x,y};
+ };
+
+ function endGame(){
+  ended=true;
+  clearInterval(timer);
+  finish(points,"🐍 ゲームオーバー！");
+  const retry=document.createElement("button");
+  retry.textContent="🔄 もう一度プレイ";
+  retry.className="action";
+  retry.onclick=()=>start("snake");
+  el("area").appendChild(retry);
+ }
+
+ function update(){
+  if(!playing||ended){
+   clearInterval(timer);
+   return;
+  }
+
+  dir=nextDir;
+  const head={
+   x:snake[0].x+dir.x,
+   y:snake[0].y+dir.y
+  };
+
+  const eating=head.x===food.x&&head.y===food.y;
+  const body=eating?snake:snake.slice(0,-1);
+
+  if(head.x<0||head.y<0||head.x>=cells||head.y>=cells||
+   body.some(p=>p.x===head.x&&p.y===head.y)){
+   endGame();
+   return;
+  }
+
+  snake.unshift(head);
+
+  if(eating){
+   points+=10;
+   el("snakeScore").textContent="SCORE: "+points;
+   newFood();
+  }else{
+   snake.pop();
+  }
+
+  draw();
+ }
+
+ draw();
+ timer=setInterval(update,150);
+}
+// ===== END SNAKE GAME =====
 </script>
 </body>
 </html>
