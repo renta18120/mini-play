@@ -1148,6 +1148,69 @@ document.getElementById("taClose").onclick=()=>{
 };
 })();
 // ===== END TARGET ARENA =====
+// ===== MINI PLAY PLAYER REGISTER =====
+(()=>{
+const KEY="miniPlayPlayerName";
+
+if(document.getElementById("playerRegister"))return;
+
+const savedName=localStorage.getItem(KEY);
+
+const panel=document.createElement("div");
+panel.id="playerRegister";
+panel.style.cssText=`
+position:fixed;
+inset:0;
+z-index:12000;
+background:#101827ee;
+display:${savedName?"none":"flex"};
+align-items:center;
+justify-content:center;
+padding:20px;
+font-family:system-ui;
+`;
+
+panel.innerHTML=`
+<div style="background:#fff;color:#182033;padding:25px;border-radius:20px;width:100%;max-width:340px;text-align:center">
+<h2>🌍 MINI PLAY</h2>
+<h3>PLAYER REGISTER</h3>
+<p>プレイヤー名を登録しよう！</p>
+<input id="playerNameInput" maxlength="16"
+placeholder="プレイヤー名"
+style="width:90%;padding:13px;border:1px solid #aaa;border-radius:10px;font-size:16px">
+<button id="playerSave"
+style="width:100%;margin-top:15px;padding:14px;background:#269b63;color:white;border:0;border-radius:12px;font-size:16px;font-weight:bold">
+登録する
+</button>
+<p id="playerError" style="color:red;font-size:13px"></p>
+</div>
+`;
+
+document.body.appendChild(panel);
+
+const button=document.getElementById("playerSave");
+
+button.onclick=()=>{
+ const input=document.getElementById("playerNameInput");
+ const name=input.value.trim();
+
+ if(!name){
+  document.getElementById("playerError").textContent="名前を入力してね！";
+  return;
+ }
+
+ if(name.length>16){
+  document.getElementById("playerError").textContent="16文字以内にしてね！";
+  return;
+ }
+
+ localStorage.setItem(KEY,name);
+ panel.style.display="none";
+ alert("ようこそ、"+name+"さん！");
+};
+
+})();
+// ===== END PLAYER REGISTER =====
 </script>
 </body>
 </html>
