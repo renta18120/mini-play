@@ -1260,6 +1260,21 @@ button.onclick=()=>{
 
 })();
 // ===== END PLAYER REGISTER =====
+// 総合ポイント表示
+function showMyPoints(){
+ const points=Number(
+  localStorage.getItem("miniPlayTotalPoints")||0
+ );
+ const name=localStorage.getItem("miniPlayPlayerName")||"PLAYER";
+
+ document.getElementById("myTotalPoints").textContent=
+ points.toLocaleString()+" PT";
+
+ document.getElementById("myPlayerName").textContent=
+ "PLAYER : "+name;
+}
+
+showMyPoints();
 </script>
 </body>
 </html>
