@@ -307,6 +307,18 @@ localStorage.setItem(
  save();beep(850);
  say(message+" / スコア "+score+(isNew?" 🏆 NEW RECORD!":""));
  render();
+// もう一度プレイボタン
+const retry=document.createElement("button");
+retry.textContent="🔄 もう一度プレイ";
+retry.className="action";
+retry.style.cssText=
+"display:block;margin:20px auto;padding:15px 25px;font-size:18px";
+
+retry.onclick=()=>{
+ start(current);
+};
+
+el("area").appendChild(retry);
 }
 function start(id){
  clearTimers();current=id;playing=true;
