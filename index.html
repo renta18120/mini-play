@@ -1,0 +1,605 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>MINI PLAY</title>
+<style>
+:root{
+ --bg:#f3f5f9;--panel:#fff;--text:#202536;
+ --sub:#8991a3;--accent:#6658e8;--line:#e9ebf2;
+}
+body.dark{
+ --bg:#111522;--panel:#1c2333;--text:#f4f5fa;
+ --sub:#a2abc0;--line:#30394c;
+}
+*{box-sizing:border-box}
+body{
+ margin:0;background:var(--bg);color:var(--text);
+ font-family:system-ui,-apple-system,sans-serif;
+ transition:.2s;
+}
+header{
+ background:var(--panel);border-bottom:1px solid var(--line);
+ padding:17px 18px;position:sticky;top:0;z-index:5;
+}
+.head{max-width:850px;margin:auto;display:flex;
+ justify-content:space-between;align-items:center}
+.logo{font-size:23px;font-weight:900;letter-spacing:-1px}
+.logo span{color:var(--accent)}
+.small{font-size:11px;color:var(--sub);margin-top:3px}
+.iconbtn{
+ border:1px solid var(--line);background:var(--bg);
+ color:var(--text);padding:10px 13px;border-radius:12px;
+}
+main{max-width:850px;margin:auto;padding:20px 16px}
+.hero{
+ background:linear-gradient(125deg,#22283d,#5146a7);
+ color:white;padding:25px;border-radius:20px;margin-bottom:22px;
+}
+.hero h1{font-size:29px;margin:0 0 8px}
+.hero p{color:#d3d4ed;font-size:13px;margin:0}
+.stats{display:flex;gap:18px;margin-top:20px}
+.stat strong{display:block;font-size:19px}
+.stat small{color:#d3d4ed}
+h2{font-size:18px;margin:23px 0 13px}
+.tools{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+input,select{
+ background:var(--panel);color:var(--text);
+ border:1px solid var(--line);border-radius:11px;
+ padding:12px;font-size:14px;
+}
+#search{flex:1;min-width:150px}
+.filters{display:flex;gap:7px;overflow-x:auto;padding:3px 0 12px}
+.filters button{
+ white-space:nowrap;border:1px solid var(--line);
+ background:var(--panel);color:var(--text);
+ padding:9px 13px;border-radius:20px;
+}
+.filters button.active{background:var(--accent);color:white}
+.games{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.game{
+ background:var(--panel);border:1px solid var(--line);
+ color:var(--text);border-radius:16px;padding:16px;
+ text-align:left;cursor:pointer;min-width:0;
+ transition:transform .15s;
+}
+.game:active{transform:scale(.97)}
+.emoji{font-size:29px}
+.game h3{font-size:15px;margin:10px 0 4px}
+.game p{font-size:11px;color:var(--sub);margin:0}
+.tag{font-size:10px;color:var(--accent);margin-top:10px}
+#screen{
+ display:none;background:var(--panel);border:1px solid var(--line);
+ border-radius:19px;padding:19px;margin-top:20px;text-align:center;
+}
+#screen h2{font-size:21px;margin:5px}
+#description{font-size:13px;color:var(--sub)}
+#area{padding:17px 0;min-height:115px}
+.action{
+ background:var(--accent);color:white;border:0;
+ border-radius:11px;padding:13px 19px;margin:5px;
+ font-size:15px;font-weight:700;cursor:pointer;
+}
+.secondary{background:var(--bg);color:var(--text);
+ border:1px solid var(--line)}
+.result{font-size:17px;font-weight:800;min-height:28px;margin:12px 0}
+.big{font-size:40px;font-weight:900;margin:12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.tile{
+ min-height:55px;border:0;border-radius:10px;
+ background:var(--bg);color:var(--text);font-size:21px;
+ font-weight:800;cursor:pointer;
+}
+.tile:disabled{opacity:.6}
+#ranking{background:var(--panel);border:1px solid var(--line);
+ border-radius:16px;padding:15px}
+.rankrow{display:flex;justify-content:space-between;
+ padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+footer{text-align:center;color:var(--sub);font-size:11px;padding:30px}
+button{font-family:inherit}
+@media(min-width:600px){
+ .games{grid-template-columns:repeat(4,1fr)}
+ main{padding:25px}
+}
+</style>
+</head>
+<body>
+<header>
+ <div class="head">
+  <div>
+   <div class="logo">🎮 MINI <span>PLAY</span></div>
+   <div class="small">SMALL GAMES, BIG FUN.</div>
+  </div>
+  <button class="iconbtn" onclick="toggleDark()" id="darkBtn">🌙</button>
+ </div>
+</header>
+
+<main>
+ <section class="hero">
+  <h1>PLAY ANYTIME.</h1>
+  <p>いつでも、どこでも、ゲームを楽しもう。</p>
+  <div class="stats">
+   <div class="stat"><strong id="total">0</strong><small>PLAYED</small></div>
+   <div class="stat"><strong id="best">0</strong><small>RECORDS</small></div>
+   <div class="stat"><strong>20</strong><small>GAMES</small></div>
+  </div>
+ </section>
+
+ <div class="tools">
+  <input id="search" placeholder="🔍 ゲームを検索..." oninput="render()">
+ </div>
+ <div class="filters" id="filters"></div>
+ <h2>🎯 GAME LIST</h2>
+ <section class="games" id="games"></section>
+
+ <section id="screen">
+  <h2 id="gameTitle"></h2>
+  <p id="description"></p>
+  <div id="area"></div>
+  <div class="result" id="result"></div>
+  <button class="action secondary" onclick="home()">← ゲーム一覧に戻る</button>
+ </section>
+
+ <h2>🏆 MY RECORDS</h2>
+ <section id="ranking">
+  <div id="records"></div>
+  <button class="action secondary" onclick="resetRecords()">記録をリセット</button>
+ </section>
+</main>
+<footer>MINI PLAY © 2026</footer>
+
+<script>
+const games=[
+ ["guess","🔢","数字当て","1〜100の数字を当てよう","脳トレ"],
+ ["reaction","⚡","反射神経","緑になったらタップ！","反射"],
+ ["rps","✊","じゃんけん","コンピューターと勝負！","運試し"],
+ ["click","👆","クリック連打","5秒間で何回押せる？","反射"],
+ ["dice","🎲","サイコロ","大きい数字を出そう","運試し"],
+ ["coin","🪙","コイントス","表か裏か予想しよう","運試し"],
+ ["math","🧮","計算チャレンジ","計算問題に挑戦！","脳トレ"],
+ ["memory","🧠","記憶ゲーム","数字の順番を覚えよう","脳トレ"],
+ ["color","🎨","色当て","文字ではなく色を見よう","脳トレ"],
+ ["highlow","📈","ハイ＆ロー","次の数字は大きい？小さい？","運試し"],
+ ["stop","⏱️","ストップウォッチ","ぴったり5秒を狙え！","反射"],
+ ["count","🔵","数を数えよう","丸はいくつある？","脳トレ"],
+ ["typing","⌨️","タイピング","表示された言葉を入力！","反射"],
+ ["order","🔢","数字順番","小さい順にタップ！","脳トレ"],
+ ["cards","🃏","神経衰弱","同じ絵を見つけよう","脳トレ"],
+ ["whack","🐹","もぐらタップ","出てきた場所を押そう","反射"],
+ ["odd","👀","仲間外れ探し","1つだけ違う絵を探せ","脳トレ"],
+ ["target","🎯","30を作れ","数字を足して30にしよう","脳トレ"],
+ ["roulette","🎰","運命ルーレット","今日の運勢を占おう","運試し"],
+ ["tap","💥","タップ勝負","10回の速さに挑戦！","反射"]
+].map(x=>({id:x[0],emoji:x[1],name:x[2],desc:x[3],cat:x[4]}));
+
+let current="",timers=[],playing=false,score=0;
+let bests=JSON.parse(localStorage.getItem("mp_bests")||"{}");
+let total=Number(localStorage.getItem("mp_total")||0);
+let category="すべて";
+let sound=true;
+let audio=null;
+
+function save(){
+ localStorage.setItem("mp_bests",JSON.stringify(bests));
+ localStorage.setItem("mp_total",total);
+ updateStats();
+}
+function updateStats(){
+ document.getElementById("total").textContent=total;
+ document.getElementById("best").textContent=Object.keys(bests).length;
+ document.getElementById("records").innerHTML=
+ games.filter(g=>bests[g.id]!==undefined)
+ .sort((a,b)=>bests[b.id]-bests[a.id])
+ .map(g=>`<div class="rankrow"><span>${g.emoji} ${g.name}</span><b>${bests[g.id]}</b></div>`)
+ .join("")||"まだ記録がありません。";
+}
+function toggleDark(){
+ document.body.classList.toggle("dark");
+ let dark=document.body.classList.contains("dark");
+ localStorage.setItem("mp_dark",dark);
+ document.getElementById("darkBtn").textContent=dark?"☀️":"🌙";
+}
+if(localStorage.getItem("mp_dark")==="true"){
+ document.body.classList.add("dark");
+ document.getElementById("darkBtn").textContent="☀️";
+}
+function beep(freq=500){
+ if(!sound)return;
+ try{
+  audio=audio||new(window.AudioContext||window.webkitAudioContext)();
+  let o=audio.createOscillator(),g=audio.createGain();
+  o.frequency.value=freq;g.gain.value=.05;
+  o.connect(g);g.connect(audio.destination);
+  o.start();o.stop(audio.currentTime+.09);
+ }catch(e){}
+}
+function render(){
+ let cats=["すべて","脳トレ","反射","運試し"];
+ document.getElementById("filters").innerHTML=cats.map(c=>
+ `<button class="${category===c?"active":""}" onclick="category='${c}';render()">${c}</button>`
+ ).join("");
+ let q=document.getElementById("search").value.toLowerCase();
+ document.getElementById("games").innerHTML=games.filter(g=>
+ (category==="すべて"||g.cat===category)&&
+ (g.name+g.desc).toLowerCase().includes(q)
+ ).map(g=>`<button class="game" onclick="start('${g.id}')">
+ <div class="emoji">${g.emoji}</div>
+ <h3>${g.name}</h3><p>${g.desc}</p>
+ <div class="tag">${g.cat} ・ ${bests[g.id]!==undefined?"BEST "+bests[g.id]:"NEW"}</div>
+ </button>`).join("")||"見つかりませんでした。";
+}
+function el(id){return document.getElementById(id)}
+function area(html){el("area").innerHTML=html}
+function say(t){el("result").textContent=t}
+function later(fn,ms){let t=setTimeout(fn,ms);timers.push(t)}
+function clearTimers(){timers.forEach(clearTimeout);timers=[]}
+function finish(points,message){
+ if(!playing)return;
+ playing=false;score=Math.max(0,Math.floor(points));
+ total++;let old=bests[current]||0;
+ let isNew=score>old;
+ if(isNew)bests[current]=score;
+ save();beep(850);
+ say(message+" / スコア "+score+(isNew?" 🏆 NEW RECORD!":""));
+ render();
+}
+function start(id){
+ clearTimers();current=id;playing=true;
+ el("screen").style.display="block";
+ let g=games.find(x=>x.id===id);
+ el("gameTitle").textContent=g.emoji+" "+g.name;
+ el("description").textContent=g.desc;
+ say("");area("");
+ el("screen").scrollIntoView({behavior:"smooth"});
+ switch(id){
+ case "guess": guess();break;
+ case "reaction": reaction();break;
+ case "rps": rps();break;
+ case "click": clickGame();break;
+ case "dice": dice();break;
+ case "coin": coin();break;
+ case "math": math();break;
+ case "memory": memory();break;
+ case "color": color();break;
+ case "highlow": highlow();break;
+ case "stop": stopGame();break;
+ case "count": countGame();break;
+ case "typing": typing();break;
+ case "order": order();break;
+ case "cards": cards();break;
+ case "whack": whack();break;
+ case "odd": odd();break;
+ case "target": target();break;
+ case "roulette": roulette();break;
+ case "tap": tapGame();break;
+ }
+}
+function home(){
+ clearTimers();playing=false;
+ el("screen").style.display="none";
+ render();window.scrollTo({top:0,behavior:"smooth"});
+}
+
+// 1 数字当て
+function guess(){
+ let n=Math.floor(Math.random()*100)+1,tries=0;
+ area(`<p>1〜100の数字は何？</p>
+ <input id="ans" type="number" min="1" max="100" placeholder="数字">
+ <button class="action" onclick="guessCheck()">回答</button>`);
+ window.guessCheck=function(){
+  let v=Number(el("ans").value);if(v<1||v>100||!v)return;
+  tries++;beep();
+  if(v===n)finish(Math.max(10,110-tries*10),tries+"回で正解！");
+  else say(v<n?"もっと大きい！":"もっと小さい！");
+ };
+}
+
+// 2 反射神経
+function reaction(){
+ area(`<p>緑色になるまで待ってね</p>
+ <button class="action" id="react" onclick="reactPress()">スタート</button>`);
+ let ready=false,startTime=0,done=false;
+ window.reactPress=function(){
+  let b=el("react");
+  if(done)return;
+  if(!ready&&b.dataset.wait==="yes"){
+   clearTimers();done=true;playing=false;b.textContent="早すぎ！";
+   say("フライング！もう一度挑戦しよう");return;
+  }
+  if(!ready){
+   b.dataset.wait="yes";b.textContent="待って...";
+   later(()=>{if(!playing)return;ready=true;startTime=Date.now();
+    b.style.background="#16a36a";b.textContent="今だ！";beep(800);
+   },1200+Math.random()*3000);
+  }else{
+   done=true;finish(Math.max(1,Math.round(1000-(Date.now()-startTime))),
+    (Date.now()-startTime)+" ms！");
+  }
+ };
+}
+
+// 3 じゃんけん
+function rps(){
+ area(["✊","✌️","✋"].map((x,i)=>
+ `<button class="action" onclick="rpsPlay(${i})">${x}</button>`).join(""));
+ window.rpsPlay=function(n){
+  if(!playing)return;
+  let c=Math.floor(Math.random()*3),h=["✊","✌️","✋"];
+  let result=n===c?"あいこ":(n-c+3)%3===1?"勝ち！":"負け！";
+  finish(n===c?1:result==="勝ち！"?10:0,
+   h[n]+" VS "+h[c]+" → "+result);
+ };
+}
+
+// 4 連打
+function clickGame(){
+ area(`<div class="big" id="count">0</div>
+ <p>5秒間で何回押せる？</p>
+ <button class="action" onclick="clickPress()" id="clickBtn">スタート！</button>`);
+ let n=0,started=false;
+ window.clickPress=function(){
+  if(!playing)return;
+  if(!started){
+   started=true;
+   el("clickBtn").textContent="連打！！";
+   later(()=>finish(n*10,n+"回押せた！"),5000);
+  }
+  n++;el("count").textContent=n;beep(300);
+ };
+}
+
+// 5 サイコロ
+function dice(){
+ area(`<p>サイコロを振ろう！</p>
+ <div class="big" id="die">🎲</div>
+ <button class="action" onclick="rollDice()">振る！</button>`);
+ window.rollDice=function(){
+  let n=1+Math.floor(Math.random()*6);
+  el("die").textContent=["⚀","⚁","⚂","⚃","⚄","⚅"][n-1];
+  finish(n*10,n+"が出た！");
+ };
+}
+
+// 6 コイントス
+function coin(){
+ area(`<p>表か裏を予想してね！</p>
+ <button class="action" onclick="coinPlay('表')">表</button>
+ <button class="action" onclick="coinPlay('裏')">裏</button>`);
+ window.coinPlay=function(n){
+  let c=Math.random()<.5?"表":"裏";
+  finish(n===c?10:0,"結果："+c+(n===c?" 正解！":" はずれ！"));
+ };
+}
+
+// 7 計算
+function math(){
+ let a=1+Math.floor(Math.random()*30),b=1+Math.floor(Math.random()*30);
+ let ans=a+b;
+ area(`<div class="big">${a} + ${b} = ?</div>
+ <input id="mathAns" type="number" placeholder="?">
+ <button class="action" onclick="mathCheck()">回答</button>`);
+ window.mathCheck=function(){
+  let v=Number(el("mathAns").value);
+  finish(v===ans?10:0,v===ans?"正解！":"正解は "+ans);
+ };
+}
+
+// 8 記憶
+function memory(){
+ let seq=Array.from({length:5},()=>1+Math.floor(Math.random()*9));
+ area(`<p>数字を5秒間覚えてね！</p>
+ <div class="big" id="sequence">${seq.join(" ")}</div>
+ <div id="memoryInput"></div>`);
+ later(()=>{
+  if(!playing)return;
+  el("sequence").textContent="？？？";
+  el("memoryInput").innerHTML=`<input id="memAns" placeholder="数字5つ">
+  <button class="action" onclick="memoryCheck()">回答</button>`;
+ },5000);
+ window.memoryCheck=function(){
+  let v=el("memAns").value.replace(/\s/g,"");
+  finish(v===seq.join("")?20:0,
+   v===seq.join("")?"全問正解！":"正解は "+seq.join(""));
+ };
+}
+
+// 9 色当て
+function color(){
+ let colors=["赤","青","緑","黄","紫"];
+ let names=["#e34c4c","#3886e8","#27a66b","#e7b92d","#9861dd"];
+ let correct=Math.floor(Math.random()*5);
+ let word=Math.floor(Math.random()*5);
+ area(`<p>文字の意味ではなく、文字の色を選んで！</p>
+ <div class="big" style="color:${names[correct]}">${colors[word]}</div>
+ ${colors.map((x,i)=>`<button class="action" onclick="colorCheck(${i})">${x}</button>`).join("")}`);
+ window.colorCheck=function(i){
+  finish(i===correct?10:0,i===correct?"正解！":"残念！");
+ };
+}
+
+// 10 ハイ＆ロー
+function highlow(){
+ let n=1+Math.floor(Math.random()*10);
+ area(`<div class="big" id="hl">${n}</div>
+ <p>次の数字は大きい？小さい？</p>
+ <button class="action" onclick="hlPlay('up')">⬆ 大きい</button>
+ <button class="action" onclick="hlPlay('down')">⬇ 小さい</button>`);
+ window.hlPlay=function(dir){
+  let next=1+Math.floor(Math.random()*10);
+  let win=dir==="up"?next>n:next<n;
+  finish(win?10:0,n+" → "+next+(next===n?" 同じ数字！":win?" 正解！":" はずれ！"));
+ };
+}
+
+// 11 ストップウォッチ
+function stopGame(){
+ area(`<div class="big" id="stopTime">0.00</div>
+ <p>5.00秒ぴったりで止めよう！</p>
+ <button class="action" onclick="stopStart()">スタート</button>
+ <button class="action" onclick="stopEnd()">ストップ</button>`);
+ let t=0,run=false;
+ window.stopStart=function(){t=Date.now();run=true;};
+ window.stopEnd=function(){
+  if(!run)return;
+  run=false;let diff=Math.abs((Date.now()-t)/1000-5);
+  finish(Math.max(0,Math.round(100-diff*100)),
+   (5+((Date.now()-t)/1000-5)).toFixed(2)+"秒");
+ };
+}
+
+// 12 数を数える
+function countGame(){
+ let n=5+Math.floor(Math.random()*12);
+ area(`<p>画面の丸はいくつ？</p>
+ <div style="font-size:24px;line-height:1.8">${"🔵".repeat(n)}</div>
+ <input id="countAns" type="number" placeholder="?">
+ <button class="action" onclick="countCheck()">回答</button>`);
+ window.countCheck=function(){
+  let v=Number(el("countAns").value);
+  finish(v===n?10:0,v===n?"正解！":"正解は "+n);
+ };
+}
+
+// 13 タイピング
+function typing(){
+ let words=["MINIPLAY","GAMETIME","JAVASCRIPT","WELCOME","CHALLENGE"];
+ let word=words[Math.floor(Math.random()*words.length)];
+ area(`<p>表示された英単語を入力！</p>
+ <div class="big">${word}</div>
+ <input id="typeAns" placeholder="入力">
+ <button class="action" onclick="typeCheck()">決定</button>`);
+ window.typeCheck=function(){
+  let ok=el("typeAns").value.trim().toUpperCase()===word;
+  finish(ok?10:0,ok?"入力成功！":"正解は "+word);
+ };
+}
+
+// 14 数字順番
+function order(){
+ let nums=[1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-.5);
+ let next=1;
+ area(`<p>1から順番に押そう！</p>
+ <div class="grid">${nums.map(n=>
+ `<button class="tile" onclick="orderPress(this,${n})">${n}</button>`).join("")}</div>`);
+ window.orderPress=function(b,n){
+  if(!playing)return;
+  if(n!==next){say("順番が違うよ！");return;}
+  b.disabled=true;b.style.background="#16a36a";b.style.color="white";
+  next++;beep();
+  if(next===10)finish(20,"全部クリア！");
+ };
+}
+
+// 15 神経衰弱
+function cards(){
+ let vals=["🍎","🍋","🍇","🍒","🍎","🍋","🍇","🍒"];
+ vals.sort(()=>Math.random()-.5);
+ let open=[],matched=0,lock=false;
+ area(`<p>同じ絵を2枚見つけよう！</p>
+ <div class="grid">${vals.map((v,i)=>
+ `<button class="tile" id="card${i}" onclick="cardPress(${i})">?</button>`).join("")}</div>`);
+ window.cardPress=function(i){
+  if(!playing||lock||open.includes(i)||el("card"+i).disabled)return;
+  el("card"+i).textContent=vals[i];open.push(i);beep();
+  if(open.length===2){
+   lock=true;
+   later(()=>{
+    if(vals[open[0]]===vals[open[1]]){
+     open.forEach(j=>el("card"+j).disabled=true);
+     matched+=2;
+    }else open.forEach(j=>el("card"+j).textContent="?"); 
+    open=[];lock=false;
+    if(matched===8)finish(20,"全ペア発見！");
+   },650);
+  }
+ };
+}
+
+// 16 もぐらタップ
+function whack(){
+ let target=Math.floor(Math.random()*9),hits=0;
+ area(`<p>🐹 が出た場所を押して！</p>
+ <div class="grid">${Array.from({length:9},(_,i)=>
+ `<button class="tile" id="w${i}" onclick="whackPress(${i})">${i===target?"🐹":"・"}</button>`).join("")}</div>
+ <p id="hits">0 / 5</p>`);
+ window.whackPress=function(i){
+  if(!playing)return;
+  if(i===target){
+   hits++;beep();target=Math.floor(Math.random()*9);
+   for(let j=0;j<9;j++)el("w"+j).textContent=j===target?"🐹":"・";
+   el("hits").textContent=hits+" / 5";
+   if(hits===5)finish(20,"5回成功！");
+  }else say("そこじゃない！");
+ };
+}
+
+// 17 仲間外れ
+function odd(){
+ let emojis=["🍎","🍎","🍎","🍎","🍎","🍎","🍎","🍎",
+ "🍎","🍎","🍎","🍎","🍎","🍎","🍎","🍏"];
+ emojis.sort(()=>Math.random()-.5);
+ let correct=emojis.indexOf("🍏");
+ area(`<p>1つだけ違う絵を見つけよう！</p>
+ <div class="grid">${emojis.map((v,i)=>
+ `<button class="tile" onclick="oddCheck(${i})">${v}</button>`).join("")}</div>`);
+ window.oddCheck=function(i){
+  finish(i===correct?10:0,i===correct?"発見！":"残念！");
+ };
+}
+
+// 18 30を作る
+function target(){
+ let nums=Array.from({length:3},()=>5+Math.floor(Math.random()*15));
+ let ans=nums.reduce((a,b)=>a+b,0);
+ area(`<p>3つの数字を足して30に近づけよう！</p>
+ <div class="big">${nums.join(" + ")}</div>
+ <p>合計を入力</p>
+ <input id="targetAns" type="number">
+ <button class="action" onclick="targetCheck()">回答</button>`);
+ window.targetCheck=function(){
+  let v=Number(el("targetAns").value);
+  finish(v===ans?20:Math.max(0,20-Math.abs(ans-v)),v===ans?"ぴったり30！":"正解は "+ans);
+ };
+}
+
+// 19 ルーレット
+function roulette(){
+ area(`<p>今日の運勢を占おう！</p>
+ <div class="big" id="fortune">🎰</div>
+ <button class="action" onclick="fortunePlay()">占う！</button>`);
+ window.fortunePlay=function(){
+  let list=["大吉 🌟","中吉 ☀️","小吉 🍀","吉 🌸","凶 🌧️"];
+  let n=Math.floor(Math.random()*5);
+  el("fortune").textContent=list[n];
+  finish(5-n,list[n]);
+ };
+}
+
+// 20 タップ勝負
+function tapGame(){
+ let n=0,t=0,started=false;
+ area(`<p>10回タップする速さに挑戦！</p>
+ <div class="big" id="tapCount">0 / 10</div>
+ <button class="action" onclick="tapPress()">TAP!</button>`);
+ window.tapPress=function(){
+  if(!playing)return;
+  if(!started){started=true;t=Date.now();}
+  n++;el("tapCount").textContent=n+" / 10";beep(400);
+  if(n===10){
+   let ms=Date.now()-t;
+   finish(Math.max(1,Math.round(10000/ms*100)),ms+" ms！");
+  }
+ };
+}
+
+function resetRecords(){
+ if(!confirm("記録を全部消す？"))return;
+ bests={};total=0;save();render();
+}
+updateStats();render();
+</script>
+</body>
+</html>
