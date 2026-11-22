@@ -692,7 +692,29 @@ launch.onclick=async()=>{
     addBlock(x,-1.5,z,"stone");
    }
   }
+// 川の水
+const waterMat=new THREE.MeshLambertMaterial({
+ color:0x279bd8,
+ transparent:true,
+ opacity:0.78
+});
+mats.water=waterMat;
 
+// 川を横切る水路
+for(let x=-10;x<=10;x++){
+ for(let z=-1;z<=1;z++){
+  const old=blocks.find(b=>
+   b.position.x===x &&
+   b.position.y===-0.5 &&
+   b.position.z===z
+  );
+  if(old){
+   scene.remove(old);
+   blocks=blocks.filter(b=>b!==old);
+  }
+  addBlock(x,-0.15,z,"water");
+ }
+}
   // 木を配置
   [[-5,-4],[5,-3],[-4,5],[6,5]].forEach(([x,z])=>{
    for(let y=0;y<3;y++)addBlock(x,y,z,"wood");
