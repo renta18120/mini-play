@@ -139,7 +139,47 @@ button{font-family:inherit}
    <div class="stat"><strong>20</strong><small>GAMES</small></div>
   </div>
  </section>
+<!-- WORLD RANKING -->
+<section style="
+ background:linear-gradient(135deg,#202b55,#465de0);
+ color:white;
+ padding:22px;
+ border-radius:20px;
+ margin:20px 0;
+ text-align:center;
+">
+ <h2>🌍 WORLD RANKING</h2>
+ <p>MINI PLAY 総合ランキング</p>
 
+ <div style="font-size:13px;opacity:.8">
+  YOUR TOTAL POINTS
+ </div>
+
+ <div id="myTotalPoints" style="
+ font-size:36px;
+ font-weight:900;
+ margin:10px;
+ ">0 PT</div>
+
+ <div id="myPlayerName" style="margin:8px">
+ PLAYER
+ </div>
+
+ <button onclick="showMyPoints()" style="
+ padding:12px 22px;
+ border:0;
+ border-radius:12px;
+ background:white;
+ color:#3449bd;
+ font-weight:bold;
+ ">
+ ポイントを確認
+ </button>
+
+ <p style="font-size:11px;opacity:.7">
+ 世界ランキングはオンライン接続後に利用できます
+ </p>
+</section>
  <div class="tools">
   <input id="search" placeholder="🔍 ゲームを検索..." oninput="render()">
  </div>
