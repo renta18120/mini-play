@@ -254,6 +254,15 @@ function finish(points,message){
  total++;let old=bests[current]||0;
  let isNew=score>old;
  if(isNew)bests[current]=score;
+// 総合ポイントを加算
+let allPoints=Number(
+ localStorage.getItem("miniPlayTotalPoints")||0
+);
+allPoints+=score;
+localStorage.setItem(
+ "miniPlayTotalPoints",
+ allPoints
+);
  save();beep(850);
  say(message+" / スコア "+score+(isNew?" 🏆 NEW RECORD!":""));
  render();
