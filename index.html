@@ -1066,20 +1066,60 @@ async function setup(){
  }
  animate();
 
- renderer.domElement.addEventListener("pointerdown",()=>{
-  if(!active)return;
+let dragging=false;
+let startX=0,startY=0;
+let lastX=0,lastY=0;
+let moved=false;
+let yaw=0,pitch=0;
+
+renderer.domElement.addEventListener("pointerdown",e=>{
+ if(!active)return;
+ dragging=true;
+ moved=false;
+ startX=lastX=e.clientX;
+ startY=lastY=e.clientY;
+ renderer.domElement.setPointerCapture(e.pointerId);
+});
+
+renderer.domElement.addEventListener("pointermove",e=>{
+ if(!dragging)return;
+
+ const dx=e.clientX-lastX;
+ const dy=e.clientY-lastY;
+
+ if(Math.abs(e.clientX-startX)+Math.abs(e.clientY-startY)>5){
+  moved=true;
+ }
+
+ yaw-=dx*0.004;
+ pitch-=dy*0.004;
+ pitch=Math.max(-0.9,Math.min(0.9,pitch));
+
+ camera.rotation.order="YXZ";
+ camera.rotation.y=yaw;
+ camera.rotation.x=pitch;
+
+ lastX=e.clientX;
+ lastY=e.clientY;
+});
+
+renderer.domElement.addEventListener("pointerup",()=>{
+ if(!dragging)return;
+ dragging=false;
+
+ if(!moved && active){
   raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
   const hits=raycaster.intersectObjects(targets);
+
   if(hits.length){
    removeTarget(hits[0].object);
    score+=10;
    if(score>0 && score%50===0)level++;
    hud();
    makeTarget();
-  }else{
-   // 外れたときは何も起きない
   }
- });
+ }
+});
 
  window.addEventListener("resize",()=>{
   if(!renderer)return;
