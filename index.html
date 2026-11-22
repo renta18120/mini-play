@@ -876,6 +876,52 @@ document.getElementById("blockClose").onclick=()=>{
  running=false;
  Object.keys(keys).forEach(k=>keys[k]=false);
 };
+// ===== BGM =====
+let bgmContext=null;
+let bgmTimer=null;
+let bgmOn=false;
+let bgmStep=0;
+
+const bgmButton=document.createElement("button");
+bgmButton.textContent="🎵 BGM OFF";
+bgmButton.style.cssText=
+"position:absolute;top:170px;left:14px;z-index:10;padding:12px;border:0;border-radius:12px;background:#222;color:white";
+screen.appendChild(bgmButton);
+
+const melody=[261.63,329.63,392,329.63,293.66,349.23,440,392];
+
+function playBgmNote(){
+ if(!bgmContext || !bgmOn)return;
+ const osc=bgmContext.createOscillator();
+ const gain=bgmContext.createGain();
+ osc.type="sine";
+ osc.frequency.value=melody[bgmStep%melody.length];
+ gain.gain.setValueAtTime(0.0001,bgmContext.currentTime);
+ gain.gain.linearRampToValueAtTime(0.035,bgmContext.currentTime+0.08);
+ gain.gain.exponentialRampToValueAtTime(0.0001,bgmContext.currentTime+0.6);
+ osc.connect(gain);
+ gain.connect(bgmContext.destination);
+ osc.start();
+ osc.stop(bgmContext.currentTime+0.65);
+ bgmStep++;
+}
+
+bgmButton.onclick=async()=>{
+ if(!bgmOn){
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)return;
+  bgmContext=bgmContext||new AudioCtx();
+  await bgmContext.resume();
+  bgmOn=true;
+  playBgmNote();
+  bgmTimer=setInterval(playBgmNote,650);
+  bgmButton.textContent="🎵 BGM ON";
+ }else{
+  bgmOn=false;
+  clearInterval(bgmTimer);
+  bgmButton.textContent="🎵 BGM OFF";
+ }
+};
 })();
 </script>
 </body>
