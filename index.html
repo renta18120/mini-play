@@ -600,6 +600,195 @@ function resetRecords(){
  bests={};total=0;save();render();
 }
 updateStats();render();
+// ===== BLOCK WORLD 追加コード =====
+(()=>{
+if(document.getElementById("blockLaunch"))return;
+
+const style=document.createElement("style");
+style.textContent=`
+#blockLaunch{position:fixed;right:14px;bottom:90px;z-index:9999;background:#269b63;color:white;border:0;border-radius:18px;padding:14px 18px;font-weight:bold;font-size:15px;box-shadow:0 4px 15px #0005}
+#blockScreen{position:fixed;inset:0;z-index:10000;background:#87ceeb;display:none;overflow:hidden;touch-action:none;font-family:system-ui}
+#blockScreen canvas{display:block;width:100%;height:100%}
+#blockClose{position:absolute;top:14px;left:14px;z-index:5;padding:10px 16px;border:0;border-radius:12px;background:#222;color:white}
+#blockHelp{position:absolute;top:16px;right:12px;color:white;background:#0008;padding:8px;border-radius:10px;font-size:12px}
+#blockControls{position:absolute;bottom:18px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:end;pointer-events:none}
+#blockControls button{pointer-events:auto;border:0;border-radius:14px;background:#222b;color:white;font-size:20px;padding:14px;min-width:48px;touch-action:none}
+#blockMove{display:grid;grid-template-columns:repeat(3,48px);gap:5px}
+#blockMove button{height:48px;padding:0}
+#blockActions{display:flex;gap:8px}
+`;
+document.head.appendChild(style);
+
+const launch=document.createElement("button");
+launch.id="blockLaunch";
+launch.textContent="🧱 BLOCK WORLD";
+document.body.appendChild(launch);
+
+const screen=document.createElement("div");
+screen.id="blockScreen";
+screen.innerHTML=`
+<button id="blockClose">✕ もどる</button>
+<div id="blockHelp">画面をスワイプ：視点移動</div>
+<div id="blockControls">
+ <div id="blockMove">
+  <span></span><button data-move="forward">▲</button><span></span>
+  <button data-move="left">◀</button><button data-move="back">▼</button><button data-move="right">▶</button>
+ </div>
+ <div id="blockActions">
+  <button id="blockBreak">壊す</button>
+  <button id="blockPlace">置く</button>
+ </div>
+</div>`;
+document.body.appendChild(screen);
+
+let renderer,scene,camera,raycaster,blocks=[],running=false;
+let yaw=0,pitch=0;
+const keys={};
+const THREE_URL="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+launch.onclick=async()=>{
+ screen.style.display="block";
+ if(running)return;
+ running=true;
+ try{
+  const THREE=await import(THREE_URL);
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x87ceeb);
+  scene.fog=new THREE.Fog(0x87ceeb,18,42);
+
+  camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,100);
+  camera.position.set(0,1.7,5);
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight);
+  screen.prepend(renderer.domElement);
+
+  scene.add(new THREE.HemisphereLight(0xffffff,0x667755,2));
+  const sun=new THREE.DirectionalLight(0xffffff,2);
+  sun.position.set(8,15,5);
+  scene.add(sun);
+
+  const geo=new THREE.BoxGeometry(1,1,1);
+  const mats={
+   grass:new THREE.MeshLambertMaterial({color:0x55aa45}),
+   dirt:new THREE.MeshLambertMaterial({color:0x8b5a32}),
+   stone:new THREE.MeshLambertMaterial({color:0x888888}),
+   wood:new THREE.MeshLambertMaterial({color:0x80502b}),
+   leaves:new THREE.MeshLambertMaterial({color:0x23833b})
+  };
+
+  function addBlock(x,y,z,type="grass"){
+   const mesh=new THREE.Mesh(geo,mats[type]||mats.grass);
+   mesh.position.set(x,y,z);
+   mesh.userData.type=type;
+   scene.add(mesh);
+   blocks.push(mesh);
+   return mesh;
+  }
+
+  for(let x=-10;x<=10;x++){
+   for(let z=-10;z<=10;z++){
+    addBlock(x,-.5,z,"dirt");
+    addBlock(x,-1.5,z,"stone");
+   }
+  }
+
+  // 木を配置
+  [[-5,-4],[5,-3],[-4,5],[6,5]].forEach(([x,z])=>{
+   for(let y=0;y<3;y++)addBlock(x,y,z,"wood");
+   for(let dx=-1;dx<=1;dx++)
+    for(let dz=-1;dz<=1;dz++)
+     for(let y=2;y<=4;y++)
+      if(Math.abs(dx)+Math.abs(dz)+(y===4?1:0)<=3)
+       addBlock(x+dx,y,z+dz,"leaves");
+  });
+
+  raycaster=new THREE.Raycaster();
+  const direction=new THREE.Vector3();
+
+  function target(){
+   camera.getWorldDirection(direction);
+   raycaster.set(camera.position,direction);
+   return raycaster.intersectObjects(blocks,false)[0];
+  }
+
+  document.getElementById("blockBreak").onclick=()=>{
+   const hit=target();
+   if(hit){
+    scene.remove(hit.object);
+    blocks=blocks.filter(b=>b!==hit.object);
+   }
+  };
+
+  document.getElementById("blockPlace").onclick=()=>{
+   const hit=target();
+   if(hit && hit.distance<6){
+    const p=hit.object.position.clone().add(hit.face.normal);
+    if(camera.position.distanceTo(p)>1.5)
+     addBlock(Math.round(p.x),Math.round(p.y),Math.round(p.z),"grass");
+   }
+  };
+
+  document.querySelectorAll("[data-move]").forEach(btn=>{
+   const key=btn.dataset.move;
+   btn.onpointerdown=e=>{e.preventDefault();keys[key]=true};
+   btn.onpointerup=btn.onpointerleave=btn.onpointercancel=()=>keys[key]=false;
+  });
+
+  let lastX=0,lastY=0,looking=false;
+  renderer.domElement.onpointerdown=e=>{
+   looking=true;lastX=e.clientX;lastY=e.clientY;
+  };
+  renderer.domElement.onpointermove=e=>{
+   if(!looking)return;
+   yaw-=(e.clientX-lastX)*.005;
+   pitch-=(e.clientY-lastY)*.005;
+   pitch=Math.max(-1.3,Math.min(1.3,pitch));
+   lastX=e.clientX;lastY=e.clientY;
+  };
+  renderer.domElement.onpointerup=()=>looking=false;
+  renderer.domElement.onpointercancel=()=>looking=false;
+
+  function animate(){
+   if(!running)return;
+   requestAnimationFrame(animate);
+   camera.rotation.order="YXZ";
+   camera.rotation.y=yaw;
+   camera.rotation.x=pitch;
+
+   const speed=.09;
+   const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+   const side=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+   if(keys.forward)camera.position.addScaledVector(forward,speed);
+   if(keys.back)camera.position.addScaledVector(forward,-speed);
+   if(keys.left)camera.position.addScaledVector(side,-speed);
+   if(keys.right)camera.position.addScaledVector(side,speed);
+
+   camera.position.x=Math.max(-9,Math.min(9,camera.position.x));
+   camera.position.z=Math.max(-9,Math.min(9,camera.position.z));
+   camera.position.y=1.7;
+   renderer.render(scene,camera);
+  }
+  animate();
+
+  window.onresize=()=>{
+   if(!renderer)return;
+   camera.aspect=innerWidth/innerHeight;
+   camera.updateProjectionMatrix();
+   renderer.setSize(innerWidth,innerHeight);
+  };
+ }catch(e){
+  running=false;
+  alert("3Dゲームを読み込めなかったよ。通信環境を確認してね。");
+ }
+};
+
+document.getElementById("blockClose").onclick=()=>{
+ screen.style.display="none";
+ running=false;
+ Object.keys(keys).forEach(k=>keys[k]=false);
+};
+})();
 </script>
 </body>
 </html>
