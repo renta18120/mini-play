@@ -1418,6 +1418,103 @@ function snakeGame(){
  timer=setInterval(update,150);
 }
 // ===== END SNAKE GAME =====
+// ===== MINI RACING =====
+function racingGame(){
+ let car=1;
+ let obstacles=[];
+ let score=0;
+ let speed=4;
+ let ended=false;
+ let timer=null;
+ let laneWidth=100;
+
+ area(`
+ <div style="text-align:center">
+  <h2>🏎️ MINI RACING</h2>
+  <div id="raceScore" style="font-size:22px;font-weight:bold">SCORE: 0</div>
+  <canvas id="raceCanvas" width="300" height="450"
+   style="width:min(100%,330px);background:#263238;border-radius:14px"></canvas>
+  <div style="display:flex;justify-content:center;gap:25px;margin:12px">
+   <button onclick="raceMove(-1)">⬅️ LEFT</button>
+   <button onclick="raceMove(1)">RIGHT ➡️</button>
+  </div>
+  <p>障害物を避けて走り続けよう！</p>
+ </div>
+ `);
+
+ const canvas=el("raceCanvas");
+ const ctx=canvas.getContext("2d");
+
+ window.raceMove=(n)=>{
+  if(!ended)car=Math.max(0,Math.min(2,car+n));
+ };
+
+ function draw(){
+  ctx.fillStyle="#333";
+  ctx.fillRect(0,0,300,450);
+
+  ctx.strokeStyle="#fff";
+  ctx.setLineDash([25,20]);
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.moveTo(100,0);ctx.lineTo(100,450);
+  ctx.moveTo(200,0);ctx.lineTo(200,450);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  obstacles.forEach(o=>{
+   ctx.fillStyle="#ff4545";
+   ctx.fillRect(o.lane*100+30,o.y,40,55);
+  });
+
+  ctx.fillStyle="#35d5ff";
+  ctx.fillRect(car*100+30,365,40,60);
+ }
+
+ function endRace(){
+  ended=true;
+  clearInterval(timer);
+  finish(score,"🏎️ レース終了！");
+  const b=document.createElement("button");
+  b.textContent="🔄 もう一度プレイ";
+  b.className="action";
+  b.onclick=()=>start("racing");
+  el("area").appendChild(b);
+ }
+
+ function update(){
+  if(!playing||ended){
+   clearInterval(timer);
+   return;
+  }
+
+  obstacles.forEach(o=>o.y+=speed);
+  obstacles=obstacles.filter(o=>o.y<460);
+
+  if(Math.random()<0.035+score/10000){
+   obstacles.push({
+    lane:Math.floor(Math.random()*3),
+    y:-60
+   });
+  }
+
+  if(obstacles.some(o=>
+   o.lane===car&&o.y+55>365&&o.y<425
+  )){
+   endRace();
+   return;
+  }
+
+  score++;
+  speed=Math.min(10,4+score/200);
+  el("raceScore").textContent="SCORE: "+score;
+  draw();
+ }
+
+ draw();
+ timer=setInterval(update,35);
+}
+// ===== END MINI RACING =====
 </script>
 </body>
 </html>
