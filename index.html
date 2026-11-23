@@ -1637,6 +1637,125 @@ function platformGame(){
 }
 // ===== END PLATFORM JUMP =====
 
+
+function puzzle2048(){
+ let board=Array(16).fill(0);
+ let score=0;
+ let ended=false;
+
+ area(`
+ <div style="text-align:center">
+  <h2>🔢 2048 PUZZLE</h2>
+  <div id="p2048score" style="font-size:22px;font-weight:bold">SCORE: 0</div>
+  <div id="p2048board" style="
+   display:grid;grid-template-columns:repeat(4,1fr);
+   gap:7px;width:min(100%,340px);margin:15px auto;
+   background:#8b7968;padding:8px;border-radius:12px">
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,65px);
+   gap:6px;justify-content:center">
+   <span></span><button onclick="move2048('up')">⬆️</button><span></span>
+   <button onclick="move2048('left')">⬅️</button>
+   <button onclick="move2048('down')">⬇️</button>
+   <button onclick="move2048('right')">➡️</button>
+  </div>
+  <p>同じ数字を合体させて2048を目指そう！</p>
+ </div>
+ `);
+
+ function spawn(){
+  let empty=board.map((v,i)=>v===0?i:-1).filter(i=>i>=0);
+  if(empty.length){
+   let i=empty[Math.floor(Math.random()*empty.length)];
+   board[i]=Math.random()<0.9?2:4;
+  }
+ }
+
+ function render(){
+  let html="";
+  board.forEach(v=>{
+   let bg=v===0?"#d6c7b8":v===2?"#eee4da":
+    v===4?"#ede0c8":v===8?"#f2b179":
+    v===16?"#f59563":v===32?"#f67c5f":
+    v===64?"#f65e3b":"#edcf72";
+   html+=`<div style="height:70px;display:grid;place-items:center;
+    background:${bg};border-radius:7px;font-size:24px;
+    font-weight:bold;color:#554b40">${v||""}</div>`;
+  });
+  el("p2048board").innerHTML=html;
+  el("p2048score").textContent="SCORE: "+score;
+ }
+
+ function slide(line){
+  let a=line.filter(v=>v!==0);
+  for(let i=0;i<a.length-1;i++){
+   if(a[i]===a[i+1]){
+    a[i]*=2;
+    score+=a[i];
+    a.splice(i+1,1);
+   }
+  }
+  while(a.length<4)a.push(0);
+  return a;
+ }
+
+ window.move2048=(direction)=>{
+  if(ended||!playing)return;
+  let old=board.join(",");
+  let next=board.slice();
+
+  for(let n=0;n<4;n++){
+   let indexes=[];
+   for(let k=0;k<4;k++){
+    if(direction==="left")indexes.push(n*4+k);
+    if(direction==="right")indexes.push(n*4+3-k);
+    if(direction==="up")indexes.push(k*4+n);
+    if(direction==="down")indexes.push((3-k)*4+n);
+   }
+   let result=slide(indexes.map(i=>board[i]));
+   indexes.forEach((idx,k)=>next[idx]=result[k]);
+  }
+
+  board=next;
+  if(old!==board.join(","))spawn();
+  render();
+
+  if(board.includes(2048)){
+   ended=true;
+   finish(score,"🎉 2048達成！");
+   addRetry();
+  }else if(!board.includes(0)&&!canMove()){
+   ended=true;
+   finish(score,"ゲームオーバー！");
+   addRetry();
+  }
+ };
+
+ function canMove(){
+  for(let r=0;r<4;r++){
+   for(let c=0;c<4;c++){
+    let i=r*4+c;
+    if(c<3&&board[i]===board[i+1])return true;
+    if(r<3&&board[i]===board[i+4])return true;
+   }
+  }
+  return false;
+ }
+
+ function addRetry(){
+  const b=document.createElement("button");
+  b.textContent="🔄 もう一度プレイ";
+  b.className="action";
+  b.onclick=()=>start("2048");
+  el("area").appendChild(b);
+ }
+
+ spawn();
+ spawn();
+ render();
+}
+// ===== END 2048 =====
+
 </script>
 </body>
 </html>
