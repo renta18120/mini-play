@@ -1925,6 +1925,166 @@ function towerDefense(){
 }
 // ===== END TOWER DEFENSE =====
 
+// ===== MATCH 3 =====
+function match3Game(){
+ const size=6;
+ const colors=["🔴","🔵","🟢","🟡","🟣"];
+ let board=[];
+ let score=0;
+ let selected=null;
+ let ended=false;
+ let moves=30;
+
+ area(`
+ <div style="text-align:center">
+  <h2>💎 MATCH 3</h2>
+  <div id="matchInfo" style="font-size:20px;font-weight:bold">
+   SCORE: 0　残り: 30
+  </div>
+  <div id="matchBoard" style="
+   display:grid;grid-template-columns:repeat(6,1fr);
+   gap:5px;width:min(100%,350px);margin:15px auto;
+   background:#29334b;padding:7px;border-radius:12px">
+  </div>
+  <p>宝石を2つ選んで入れ替えよう！</p>
+ </div>
+ `);
+
+ function randomColor(){
+  return colors[Math.floor(Math.random()*colors.length)];
+ }
+
+ function createBoard(){
+  board=Array.from({length:size},()=>Array(size).fill(null));
+  for(let r=0;r<size;r++){
+   for(let c=0;c<size;c++){
+    let choices=colors.filter(color=>
+     !(c>=2&&board[r][c-1]===color&&board[r][c-2]===color)&&
+     !(r>=2&&board[r-1][c]===color&&board[r-2][c]===color)
+    );
+    board[r][c]=choices[Math.floor(Math.random()*choices.length)];
+   }
+  }
+ }
+
+ function render(){
+  let html="";
+  for(let r=0;r<size;r++){
+   for(let c=0;c<size;c++){
+    let isSelected=selected&&selected.r===r&&selected.c===c;
+    html+=`<button data-r="${r}" data-c="${c}"
+     style="padding:5px 0;min-width:0;aspect-ratio:1;
+     font-size:clamp(19px,6vw,29px);
+     background:${isSelected?"#536dfe":"#46536d"};
+     border:2px solid ${isSelected?"white":"transparent"};
+     border-radius:8px">${board[r][c]}</button>`;
+   }
+  }
+  el("matchBoard").innerHTML=html;
+  el("matchInfo").textContent=
+   "SCORE: "+score+"　残り: "+moves;
+ }
+
+ function findMatches(){
+  let found=new Set();
+
+  for(let r=0;r<size;r++){
+   for(let c=0;c<size;c++){
+    let color=board[r][c];
+    if(c+2<size&&board[r][c+1]===color&&board[r][c+2]===color){
+     let k=c;
+     while(k<size&&board[r][k]===color){
+      found.add(r+","+k++);
+     }
+    }
+    if(r+2<size&&board[r+1][c]===color&&board[r+2][c]===color){
+     let k=r;
+     while(k<size&&board[k][c]===color){
+      found.add(k+","+c);
+      k++;
+     }
+    }
+   }
+  }
+  return [...found].map(v=>v.split(",").map(Number));
+ }
+
+ function resolve(){
+  let matches=findMatches();
+  if(!matches.length)return false;
+
+  matches.forEach(([r,c])=>{
+   board[r][c]=null;
+   score+=10;
+  });
+
+  for(let c=0;c<size;c++){
+   let remaining=board.map(row=>row[c]).filter(v=>v!==null);
+   for(let r=size-1;r>=0;r--){
+    board[r][c]=remaining.pop()||randomColor();
+   }
+  }
+  return true;
+ }
+
+ function finishMatch(){
+  ended=true;
+  finish(score,"💎 MATCH 3終了！");
+  const b=document.createElement("button");
+  b.textContent="🔄 もう一度プレイ";
+  b.className="action";
+  b.onclick=()=>start("match3");
+  el("area").appendChild(b);
+ }
+
+ el("matchBoard").addEventListener("click",e=>{
+  if(ended||!playing)return;
+  const btn=e.target.closest("button[data-r]");
+  if(!btn)return;
+
+  const r=Number(btn.dataset.r);
+  const c=Number(btn.dataset.c);
+
+  if(!selected){
+   selected={r,c};
+   render();
+   return;
+  }
+
+  const first=selected;
+  selected=null;
+
+  if(Math.abs(first.r-r)+Math.abs(first.c-c)!==1){
+   selected={r,c};
+   render();
+   return;
+  }
+
+  let temp=board[first.r][first.c];
+  board[first.r][first.c]=board[r][c];
+  board[r][c]=temp;
+
+  if(!findMatches().length){
+   temp=board[first.r][first.c];
+   board[first.r][first.c]=board[r][c];
+   board[r][c]=temp;
+   render();
+   return;
+  }
+
+  moves--;
+  while(resolve()){}
+  render();
+
+  if(moves<=0)finishMatch();
+ });
+
+ createBoard();
+ render();
+}
+// ===== END MATCH 3 =====
+
+
 </script>
 </body>
 </html>
